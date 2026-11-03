@@ -16,10 +16,34 @@ Precisa de Node 20+ e um Postgres.
 cp .env.example .env     # preencha DATABASE_URL, AUTH_SECRET e GEMINI_API_KEY
 npm install
 npm run dev              # http://localhost:3000  (cria as tabelas sozinho)
-npm test                 # testes da lógica (horários, busca, questionário, prompt)
+npm test                 # testes da lógica (horários, busca, Pix, pedidos, comprovantes, IA simulada)
 ```
 
 Crie uma conta em `/login`, termine a **Configuração**, cadastre alguns **Produtos**, use **Testar bot** e só então conecte o WhatsApp.
+
+
+## Modo vendas (pedido, negociação, Pix e comprovante)
+
+Ative em **Configuração → "MODO VENDAS"** e preencha: WhatsApp do dono, tipo e chave Pix, nome do recebedor, desconto máximo e o que o bot deve perguntar antes de fechar.
+
+**Como o atendimento funciona**
+1. O cliente pede algo; o bot busca no catálogo e **pergunta os detalhes** necessários (quantidade, variações, retirada/entrega, endereço, nome…).
+2. O bot **negocia só dentro do desconto máximo** que você definiu. O desconto e todos os valores são calculados pelo código: a IA não consegue dar mais desconto nem inventar preço.
+3. Mostra o **resumo** do pedido e só gera o Pix depois de um "sim" claro do cliente.
+4. O **código Pix "copia e cola"** (valor fixo, padrão do Banco Central) é enviado em mensagem separada.
+5. O cliente manda o comprovante; o Gemini **lê a imagem** e o sistema confere valor, status (efetivado/agendado), favorecido, data e se o comprovante **já foi usado em outro pedido**.
+6. O dono recebe no WhatsApp: pedido completo, **foto do comprovante**, o que bateu e o que não bateu.
+7. O dono responde **`ok 12`** (confirma), **`recusar 12 motivo`** ou **`cancelar 12`**; o cliente é avisado. `pedidos` lista os pendentes. Também dá para fazer tudo na aba **Pedidos** do painel.
+
+**Para quem o bot manda mensagem**: só para o número do dono (avisos) e para clientes que escreveram nas últimas 24 h (respostas e avisos de pedido). Não existe envio para outros números: isso é travado no código, no ponto único de envio (`sendRaw`), então até um erro futuro não consegue mandar mensagem a um desconhecido. Use o botão "Enviar mensagem de teste ao dono" na aba WhatsApp para conferir o número.
+
+**O que o bot NÃO faz (de propósito)**: não confirma pagamento. Ele nunca diz ao cliente que o Pix caiu. Um print pode ser falso ou editado, e só o app do banco prova que o dinheiro entrou, então a confirmação é sempre do dono. Para confirmação automática de verdade seria preciso integrar um provedor de Pix com webhook (Mercado Pago, Efí, Asaas…).
+
+## Reconhecimento
+
+- Entende **áudios** e **fotos** dos clientes (o Gemini ouve e vê).
+- Busca no catálogo tolera **plural, sinônimos** (ex.: "enxaqueca" encontra "dor de cabeça") e **erros de digitação**.
+- Pergunta ao Google qual modelo Gemini está disponível para a sua chave (`GEMINI_MODEL=auto`).
 
 ## Hospedagem (importante)
 
@@ -43,7 +67,11 @@ server.mjs           servidor: Next.js + conexões do WhatsApp no mesmo processo
 db/schema.sql        tabelas (users, businesses, products, conversations, messages, wa_auth)
 lib/templates.js     questionários por tipo de empresa e rótulos dos produtos
 lib/prompt.js        monta as instruções do atendente com os dados da empresa
-lib/ai.js            Gemini com ferramentas: buscar_produtos e chamar_atendente_humano
+lib/ai.js            Gemini com ferramentas: buscar_produtos, chamar_atendente_humano, registrar_pedido, gerar_pix, cancelar_pedido
+lib/pix.js           Pix copia e cola (BR Code + CRC16)
+lib/order-logic.js   pedido, desconto limitado, comandos do dono
+lib/order-tools.js   ferramentas de venda + ações do dono
+lib/proof.js         conferência do comprovante (valor, duplicado, status...)
 lib/catalog.js       busca no catálogo (ranking por termos, sem acento)
 lib/wa.js            sessões do WhatsApp (QR, reconexão, fila, simulação de digitação)
 lib/bot.js           fluxo de uma mensagem: salva, consulta IA, responde, pausa

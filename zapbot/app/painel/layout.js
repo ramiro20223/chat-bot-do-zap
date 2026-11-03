@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { api } from '@/components/api';
 
 const LINKS = [
-  ['/painel', 'WhatsApp'], ['/painel/configuracao', 'Configuração'], ['/painel/produtos', 'Produtos'],
+  ['/painel', 'WhatsApp'], ['/painel/configuracao', 'Configuração'], ['/painel/produtos', 'Produtos'], ['/painel/pedidos', 'Pedidos'],
   ['/painel/teste', 'Testar bot'], ['/painel/conversas', 'Conversas'],
 ];
 

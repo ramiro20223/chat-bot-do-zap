@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/components/api';
-import { BUSINESS_TYPES, questionsFor } from '@/lib/templates.js';
+import { BUSINESS_TYPES, questionsFor, isRequired } from '@/lib/templates.js';
 import { DAYS, DEFAULT_HOURS } from '@/lib/hours.js';
 
 function HoursEditor({ value, onChange }) {
@@ -29,9 +29,9 @@ function HoursEditor({ value, onChange }) {
   );
 }
 
-function Field({ q, value, onChange }) {
+function Field({ q, value, onChange, required }) {
   const id = `q-${q.key}`;
-  const label = <label htmlFor={id}>{q.label}{q.required && <span className="muted"> *</span>}</label>;
+  const label = <label htmlFor={id}>{q.label}{required && <span className="muted"> *</span>}</label>;
   if (q.type === 'hours') return <div>{label}<HoursEditor value={value} onChange={onChange} /></div>;
   if (q.type === 'textarea') return <div>{label}<textarea id={id} value={value || ''} onChange={(e) => onChange(e.target.value)} /></div>;
   if (q.type === 'select') return (
@@ -66,7 +66,7 @@ export default function Configuracao() {
   }, []);
 
   const questions = questionsFor(type);
-  const missing = questions.filter((q) => q.required && q.type !== 'boolean' && (answers[q.key] === undefined || answers[q.key] === '' || (Array.isArray(answers[q.key]) && !answers[q.key].length)));
+  const missing = questions.filter((q) => isRequired(q, answers) && q.type !== 'boolean' && (answers[q.key] === undefined || answers[q.key] === '' || (Array.isArray(answers[q.key]) && !answers[q.key].length)));
 
   async function save(e) {
     e.preventDefault(); setMsg(null);
@@ -94,7 +94,7 @@ export default function Configuracao() {
       </div>
 
       <div className="card">
-        {questions.map((q) => <Field key={q.key} q={q} value={answers[q.key]} onChange={(v) => setAnswers((a) => ({ ...a, [q.key]: v }))} />)}
+        {questions.map((q) => <Field key={q.key} q={q} required={isRequired(q, answers)} value={answers[q.key]} onChange={(v) => setAnswers((a) => ({ ...a, [q.key]: v }))} />)}
       </div>
       <button className="primary">Salvar configuração</button>
     </form>
