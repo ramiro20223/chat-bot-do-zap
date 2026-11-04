@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  seguranca-e-testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Procurar segredos esquecidos no código
+        run: node zapbot/scripts/check-secrets.mjs
+      - name: Testes (não precisam de banco nem de chaves)
+        working-directory: zapbot
+        run: node --test test/*.test.js

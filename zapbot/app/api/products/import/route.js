@@ -1,11 +1,11 @@
 import { pool } from '@/lib/db.js';
-import { currentBusiness, unauthorized, bad } from '@/lib/session.js';
+import { currentBusiness, unauthorized, bad, readJson } from '@/lib/session.js';
 import { parseBulk } from '@/lib/product.js';
 
 export async function POST(req) {
   const b = await currentBusiness();
   if (!b) return unauthorized();
-  const { text } = await req.json().catch(() => ({}));
+  const { text } = await readJson(req, 2_000_000);
   const { items, errors } = parseBulk(text);
   if (!items.length) return bad(errors[0] || 'Nenhum produto encontrado no texto');
   if (items.length > 2000) return bad('Importe no máximo 2000 produtos por vez');

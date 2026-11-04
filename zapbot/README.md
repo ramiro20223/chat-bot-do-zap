@@ -60,6 +60,36 @@ O WhatsApp exige um **processo sempre ligado**. **Não funciona na Vercel/Netlif
 - **Farmácia:** o bot só lista o que está no catálogo, lembra de procurar um farmacêutico e encaminha casos sensíveis para humano. Revise as respostas com o responsável técnico antes de usar de verdade.
 - A IA pode errar. Mantenha o catálogo e o questionário atualizados, que são a "fonte de verdade" dela, e acompanhe a aba **Conversas**.
 
+## Segurança
+
+**O que o código já faz**
+- **Segredos obrigatórios:** em produção o servidor se recusa a iniciar sem `AUTH_SECRET` (32+ caracteres) e `DATA_ENCRYPTION_KEY`. Não existe segredo padrão.
+- **Sessão do WhatsApp criptografada** no banco (AES-256-GCM, amarrada à empresa): quem copiar o banco sem a chave não consegue usar o seu número.
+- **Login:** senha com bcrypt (custo 12), mínimo de 10 caracteres, bloqueio de senhas comuns, tempo de resposta igual para e-mail existente ou não, três freios contra tentativa em massa, sessão de 7 dias que pode ser revogada (*Sair de todos*) e cookie `__Host-` em produção.
+- **Cadastro fechado em produção**, só com código de convite (`REGISTRATION_CODE`).
+- **Proteção web:** barreira contra CSRF (só aceita alterações vindas do próprio site), cabeçalhos de segurança (CSP, HSTS, anti-incorporação), respostas da API sem cache, limite de tamanho e validação das entradas, IDs validados.
+- **Trava de destinatários:** o bot só envia mensagem ao número do dono e a clientes que escreveram nas últimas 24 h, imposto no ponto único de envio. Anti-flood por cliente.
+- **Dinheiro:** valores, desconto e Pix calculados em código; o bot nunca confirma pagamento sozinho.
+- **Repositório:** `.gitignore` bloqueia `.env`, chaves e arquivos de assinatura do APK; um scanner de segredos e os testes rodam a cada Pull Request; o Dependabot avisa de dependências com falha de segurança.
+
+**APK: o que fica protegido e o que não fica**
+
+O jeito certo de gerar o APK deste projeto é uma **casca** (Capacitor ou TWA) que abre o seu site `https://...`. Assim:
+
+- ✅ **O código do servidor (bot, Pix, regras, banco) NÃO vai dentro do APK.** Ele fica no servidor, e ninguém com o app consegue ler nem alterar.
+- ✅ **Nenhuma chave vai no app.** As chaves (`GEMINI_API_KEY`, banco, segredos) existem só no servidor.
+- ⚠️ **O código das telas é público para quem tiver o app.** Todo APK é um arquivo ZIP, e as telas (HTML/JS) podem ser lidas por quem o abrir. Ofuscar só atrasa, não protege. Por isso nada sensível pode estar nas telas.
+- 🔒 **A segurança de verdade está no servidor:** cada pedido é conferido lá (login, empresa dona do dado, limites). Alterar o app não dá poder nenhum.
+
+Cuidados na hora de gerar o APK:
+1. Aponte o app **só** para o seu domínio HTTPS (sem `http`), com `usesCleartextTraffic="false"`.
+2. `android:allowBackup="false"` e **desligue a depuração** do WebView na versão de lançamento.
+3. Ative a minificação (R8) na versão de lançamento.
+4. **Guarde o arquivo de assinatura (`.keystore`) fora do Git**, com cópia segura. Quem o tiver pode publicar atualizações falsas do seu app. Prefira o *Play App Signing*.
+5. Não coloque chave nenhuma no app, nem "escondida".
+
+**O que nenhum código resolve (é com você):** 2FA nas contas (GitHub, hospedagem, banco, Google), banco sem acesso público, backups testados, plano pago do Gemini e uma política de privacidade (LGPD). Veja o `SECURITY.md`.
+
 ## Estrutura
 
 ```

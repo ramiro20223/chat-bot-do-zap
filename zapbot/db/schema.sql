@@ -6,6 +6,8 @@ create table if not exists users (
   created_at timestamptz not null default now()
 );
 
+alter table users add column if not exists token_version integer not null default 0;  -- sessões: aumentar = sair de todos os aparelhos
+
 create table if not exists businesses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid unique not null references users(id) on delete cascade,

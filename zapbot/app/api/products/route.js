@@ -1,5 +1,5 @@
 import { query } from '@/lib/db.js';
-import { currentBusiness, unauthorized, bad } from '@/lib/session.js';
+import { currentBusiness, unauthorized, bad, readJson } from '@/lib/session.js';
 import { cleanProduct } from '@/lib/product.js';
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
 export async function POST(req) {
   const b = await currentBusiness();
   if (!b) return unauthorized();
-  const r = cleanProduct(await req.json().catch(() => ({})));
+  const r = cleanProduct(await readJson(req));
   if (r.error) return bad(r.error);
   const p = r.value;
   const { rows } = await query(

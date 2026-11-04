@@ -1,5 +1,5 @@
 import { query } from '@/lib/db.js';
-import { currentBusiness, unauthorized, bad } from '@/lib/session.js';
+import { currentBusiness, unauthorized, bad, readJson } from '@/lib/session.js';
 import { handleIncoming } from '@/lib/bot.js';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ const MAX_B64 = 6 * 1024 * 1024 * 1.4;
 export async function POST(req) {
   const b = await currentBusiness();
   if (!b) return unauthorized();
-  const { text, reset, image } = await req.json().catch(() => ({}));
+  const { text, reset, image } = await readJson(req, 9_000_000);
   const jid = `teste:${b.id}`;
   if (reset) {
     await query('delete from conversations where business_id = $1 and jid = $2', [b.id, jid]);

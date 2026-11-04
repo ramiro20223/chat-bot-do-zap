@@ -1,4 +1,4 @@
-import { currentBusiness, unauthorized, bad } from '@/lib/session.js';
+import { currentBusiness, unauthorized, bad, readJson } from '@/lib/session.js';
 import { listOrders } from '@/lib/orders.js';
 import { applyOrderAction } from '@/lib/order-tools.js';
 import { sendToCustomer } from '@/lib/wa.js';
@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(req) {
   const b = await currentBusiness();
   if (!b) return unauthorized();
-  const { num, action, reason } = await req.json().catch(() => ({}));
+  const { num, action, reason } = await readJson(req);
   if (!['confirmar', 'recusar', 'cancelar'].includes(action) || !Number.isInteger(num)) return bad('Ação inválida');
   const r = await applyOrderAction({ business: b, num, action, reason: reason ? String(reason).slice(0, 300) : null, notifyCustomer: (jid, t) => sendToCustomer(b.id, jid, t) });
   return Response.json(r, { status: r.ok ? 200 : 400 });

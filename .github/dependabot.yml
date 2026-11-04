@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Avisa (por Pull Request) quando uma dependência tem versão nova ou correção de segurança.
+  - package-ecosystem: npm
+    directory: "/zapbot"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

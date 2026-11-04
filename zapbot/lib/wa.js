@@ -12,10 +12,14 @@ import { usePgAuthState, clearAuth } from './wa-auth.js';
 import { handleIncoming, pauseConversation } from './bot.js';
 import { handleOwnerCommand } from './order-tools.js';
 import { samePhone, withinReplyWindow, canSendTo } from './guard.js';
+import { createLimiter } from './limits.js';
 
 const logger = pino({ level: process.env.WA_LOG_LEVEL || 'silent' });
 const DEBOUNCE_MS = 2500;            // junta mensagens seguidas do cliente numa única resposta
 const TYPING_MAX_MS = Number(process.env.WA_TYPING_MAX_MS || 2500); // pausa "digitando…" (parece humano, mas custa tempo)
+// Anti-flood: um cliente (ou robô) que manda mensagens demais é ignorado por um tempo. Protege a cota da IA e evita loops de bots.
+const flood = createLimiter({ max: Number(process.env.WA_MAX_MSGS_PER_10MIN || 30), windowMs: 10 * 60_000 });
+const MAX_TEXT = 2000;
 const TAKEOVER_MIN = Number(process.env.WA_HUMAN_TAKEOVER_MINUTES || 30);
 
 // Estado compartilhado entre o servidor e as rotas do Next (empacotados separadamente).
@@ -180,7 +184,7 @@ async function onMessage(businessId, s, sock, m) {
 
   const business = await businessOf(businessId);
   if (!business) return;
-  const text = extractText(m.message);
+  const text = extractText(m.message).slice(0, MAX_TEXT);
 
   // Mensagem do dono: comandos (pedidos, ok 12, recusar 12 motivo...), nunca atendimento de cliente.
   if (isOwner(business, phoneJidOf(m, jid))) {
@@ -197,6 +201,13 @@ async function onMessage(businessId, s, sock, m) {
   }
 
   s.lastInbound.set(jid, Date.now());   // este cliente escreveu agora: o bot pode responder a ele (janela de 24h)
+  if (!flood.allow(`${businessId}|${jid}`)) {
+    if (Date.now() - (s.noticeAt.get(`flood:${jid}`) || 0) > 10 * 60_000) {
+      s.noticeAt.set(`flood:${jid}`, Date.now());
+      console.warn(`[wa] FLOOD: ${jid} passou de ${process.env.WA_MAX_MSGS_PER_10MIN || 30} mensagens em 10 min; ignorando por um tempo`);
+    }
+    return;
+  }
 
   const content = unwrap(m.message) || {};
   const media = [];
@@ -222,7 +233,7 @@ async function onMessage(businessId, s, sock, m) {
   p.timer = setTimeout(() => {
     s.pending.delete(jid);
     const prev = s.chains.get(jid) || Promise.resolve();
-    const next = prev.then(() => respond(businessId, s, sock, jid, p.name, p.texts.join('\n'), p.media))
+    const next = prev.then(() => respond(businessId, s, sock, jid, p.name, p.texts.join('\n').slice(0, 4000), p.media))
       .catch((e) => console.error('[wa] atendimento:', e.message));
     s.chains.set(jid, next);
     next.finally(() => { if (s.chains.get(jid) === next) s.chains.delete(jid); });
