@@ -17,3 +17,11 @@ Não abra um Issue público. Fale diretamente com o dono do repositório.
 
 ## O que o código já faz
 Veja a seção "Segurança" do `zapbot/README.md`.
+
+## Assinatura e administrador
+
+- **Senhas dos clientes:** HMAC-SHA256 com `PASSWORD_PEPPER` (só no servidor) + bcrypt custo 12. Um banco vazado não permite nem testar senhas sem a pimenta. Guarde cópia da pimenta: perdê-la = todos precisam redefinir a senha.
+- **Administrador:** existe só nas variáveis de ambiente (nunca no banco nem no cadastro público): e-mail, hash **scrypt** da senha e segredo **TOTP**. O login exige os três, confere sempre os três, limita 5 tentativas/15 min por IP e 30/h no total, e cada código de 6 dígitos só vale uma vez.
+- **Sessão do admin:** cookie próprio `__Host-zap_admin`, `SameSite=Strict`, 2 h, audiência diferente da do cliente (token de cliente nunca abre o admin).
+- **Sem assinatura = sem acesso:** a API responde 402, o bot não responde nem notifica. Bloquear derruba as sessões do cliente na hora.
+- **Limite honesto:** o app é só uma "janela" para o site; quem libera o acesso é o servidor. Mesmo com o APK em mãos, ninguém ativa a própria conta sem a sua liberação.

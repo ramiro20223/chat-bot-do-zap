@@ -111,3 +111,24 @@ app/                 painel (login, conexão, configuração, produtos, teste, c
 ## Próximos passos sugeridos
 
 Envio de imagens dos produtos, entendimento de áudio (transcrição), múltiplos números por empresa, planos/cobrança, e a integração com a API oficial da Meta.
+
+
+## Assinatura (R$ 99,99/mês), ID da conta e liberação pelo administrador
+
+**Fluxo do cliente (no app/APK):**
+1. Abre o app → tela animada explicando o ZapBot e a assinatura de R$ 99,99/mês.
+2. Toca em **Criar minha conta** (e-mail + senha). A conta nasce **sem acesso** e ganha um **ID** (ex.: `ZB-7K2M9Q`).
+3. Na tela do ID, toca em **Falar no WhatsApp e ativar**: abre o seu WhatsApp (`ADMIN_WHATSAPP`) com o ID já escrito.
+4. Vocês conversam, ele paga, você libera. A tela dele confere sozinha a cada 8 s e abre o painel assim que você liberar.
+
+**Você (administrador):** entre em `https://SEU-SITE/admin` com e-mail + senha + código do autenticador (2FA). Busque o cliente pelo ID ou e-mail e use **Liberar 30 dias**, **+30 dias** (soma ao que sobrou), **Remover** ou **Bloquear**. Tudo fica registrado em `subscription_events`.
+
+**Configurar:**
+```bash
+npm run admin:setup        # pede e-mail e senha (mín. 14 caracteres) e gera o 2FA; cole as 3 linhas no servidor
+```
+Depois defina também `PASSWORD_PEPPER`, `ADMIN_WHATSAPP` e `ALLOW_REGISTRATION=true` (veja `.env.example`). Para testar no seu computador sem assinatura: `SUBSCRIPTION_REQUIRED=false`.
+
+**Regras:** sem assinatura ativa (pendente, vencida ou bloqueada) o painel responde "assinatura inativa" **e o bot fica mudo** (não responde clientes nem avisa o dono). Contas criadas antes deste recurso viram "aguardando" até você liberar.
+
+**Senhas e segredos:** senha do cliente = HMAC com a pimenta (`PASSWORD_PEPPER`) + bcrypt custo 12 (contas antigas são regravadas assim no próximo login). Senha do admin = scrypt; o 2FA é TOTP (RFC 6238) e o mesmo código não vale duas vezes. Nenhuma senha é guardada em texto puro, nem no banco nem nos logs.

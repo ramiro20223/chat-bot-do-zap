@@ -37,13 +37,21 @@ test('crypto: parseKey só aceita 64 caracteres hexadecimais', () => {
 
 test('config: produção exige segredos fortes e distintos', () => {
   const hex = crypto.randomBytes(32).toString('hex');
-  const ok = { AUTH_SECRET: crypto.randomBytes(32).toString('hex'), DATA_ENCRYPTION_KEY: hex, DATABASE_URL: 'postgres://u:p@db.exemplo.com/x', DATABASE_SSL: 'true', GEMINI_API_KEY: 'k' };
+  const ok = { AUTH_SECRET: crypto.randomBytes(32).toString('hex'), DATA_ENCRYPTION_KEY: hex, DATABASE_URL: 'postgres://u:p@db.exemplo.com/x', DATABASE_SSL: 'true', GEMINI_API_KEY: 'k',
+    PASSWORD_PEPPER: crypto.randomBytes(32).toString('hex'), ADMIN_EMAIL: 'dono@loja.com', ADMIN_PASSWORD_HASH: 'scrypt$32768$8$1$AAAA$BBBB', ADMIN_TOTP_SECRET: 'JBSWY3DPEHPK3PXP', ADMIN_WHATSAPP: '(11) 98888-7777' };
   assert.deepEqual(configProblems(ok, true), { errors: [], warnings: [] });
   assert.equal(configProblems({ ...ok, AUTH_SECRET: 'curta' }, true).errors.length, 1);
   assert.equal(configProblems({ ...ok, AUTH_SECRET: undefined }, true).errors.length, 1);
   assert.equal(configProblems({ ...ok, DATA_ENCRYPTION_KEY: 'nope' }, true).errors.length, 1);
   assert.equal(configProblems({ ...ok, AUTH_SECRET: hex }, true).errors.length, 1);
   assert.equal(configProblems({ ...ok, DATABASE_URL: undefined }, true).errors.length, 1);
+  // assinatura: pimenta e conta de administrador são obrigatórias em produção
+  assert.equal(configProblems({ ...ok, PASSWORD_PEPPER: undefined }, true).errors.length, 1);
+  assert.equal(configProblems({ ...ok, PASSWORD_PEPPER: ok.AUTH_SECRET }, true).errors.length, 1);
+  assert.equal(configProblems({ ...ok, ADMIN_PASSWORD_HASH: 'minhasenha123' }, true).errors.length, 1);   // senha em texto puro não passa
+  assert.equal(configProblems({ ...ok, ADMIN_TOTP_SECRET: undefined }, true).errors.length, 1);
+  assert.equal(configProblems({ ...ok, ADMIN_WHATSAPP: '123' }, true).errors.length, 1);
+  assert.equal(configProblems({ ...ok, ADMIN_EMAIL: undefined, ADMIN_PASSWORD_HASH: undefined, ADMIN_TOTP_SECRET: undefined, ADMIN_WHATSAPP: undefined, SUBSCRIPTION_REQUIRED: 'false' }, true).errors.length, 0);
   assert.match(configProblems({ ...ok, DATABASE_SSL: 'false' }, true).warnings.join(), /DATABASE_SSL/);
   assert.match(configProblems({ ...ok, COOKIE_SECURE: 'false' }, true).warnings.join(), /COOKIE_SECURE/);
 });

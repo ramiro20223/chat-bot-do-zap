@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { rows } = await query(
     `select c.id, c.jid, c.contact_name, c.last_message_at, (c.paused_until > now()) as paused,
        (select body from messages m where m.conversation_id = c.id order by id desc limit 1) as last_body

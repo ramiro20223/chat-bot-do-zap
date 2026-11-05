@@ -9,7 +9,7 @@ const MAX_B64 = 6 * 1024 * 1024 * 1.4;
 // Devolve também o que o DONO receberia (pedido novo, comprovante, pedido de atendimento).
 export async function POST(req) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { text, reset, image } = await readJson(req, 9_000_000);
   const jid = `teste:${b.id}`;
   if (reset) {

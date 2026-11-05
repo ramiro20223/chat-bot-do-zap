@@ -5,14 +5,14 @@ import { BUSINESS_TYPES, questionsFor, missingRequired } from '@/lib/templates.j
 
 export async function GET() {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   return Response.json({ name: b.name, type: b.type, answers: b.answers, bot_enabled: b.bot_enabled, missing: missingRequired(b.type, b.answers) });
 }
 
 // Só grava respostas das perguntas do tipo escolhido (ignora qualquer outra chave).
 export async function PUT(req) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const body = await readJson(req);
 
   const type = body.type ?? b.type;

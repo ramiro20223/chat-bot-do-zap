@@ -13,6 +13,7 @@ import { handleIncoming, pauseConversation } from './bot.js';
 import { handleOwnerCommand } from './order-tools.js';
 import { samePhone, withinReplyWindow, canSendTo } from './guard.js';
 import { createLimiter } from './limits.js';
+import { hasAccess, subscriptionRequired } from './subscription.js';
 
 const logger = pino({ level: process.env.WA_LOG_LEVEL || 'silent' });
 const DEBOUNCE_MS = 2500;            // junta mensagens seguidas do cliente numa única resposta
@@ -66,7 +67,7 @@ export async function disconnect(businessId) {
 
 /** Chamado na inicialização do servidor: reconecta as empresas que estavam conectadas. */
 export async function restoreSessions() {
-  const { rows } = await query('select id from businesses where wa_enabled');
+  const { rows } = await query('select b.id from businesses b join users u on u.id = b.user_id where b.wa_enabled and not u.blocked');
   for (const r of rows) {
     connect(r.id).catch((e) => console.error('[wa] falha ao restaurar', r.id, e.message));
     await sleep(1500);
@@ -164,7 +165,15 @@ async function fetchMedia(m, sock, kind, mime, size, max) {
   }
 }
 
-const businessOf = async (id) => (await query('select * from businesses where id = $1', [id])).rows[0];
+// Empresa SÓ se a assinatura do dono estiver ativa. Vencida/bloqueada/pendente = o bot fica totalmente mudo (nem responde, nem avisa).
+const businessOf = async (id) => {
+  const { rows } = await query(
+    'select b.*, u.subscription_until, u.blocked from businesses b join users u on u.id = b.user_id where b.id = $1', [id]);
+  const row = rows[0];
+  if (!row || !hasAccess(row, new Date(), subscriptionRequired(process.env))) return null;
+  const { subscription_until: _s, blocked: _b, ...business } = row;
+  return business;
+};
 
 /** Número de telefone de quem escreveu (chats novos usam @lid; quando o WhatsApp informa o telefone, usamos ele). */
 const phoneJidOf = (m, jid) => (jid.endsWith('@lid') ? (m.key.senderPn || m.key.remoteJidAlt || null) : jid);
@@ -308,6 +317,7 @@ export async function sendTestToOwner(businessId) {
   const s = sessions.get(businessId);
   if (!s?.sock || s.status !== 'connected') return { sent: false, reason: 'WhatsApp desconectado' };
   const business = await businessOf(businessId);
+  if (!business) return { sent: false, reason: 'assinatura inativa' };
   try {
     const ok = await notifyOwner(business, s, s.sock, `✅ Teste do ZapBot: este número receberá os pedidos e comprovantes de *${business.name}*.\nResponda *ajuda* para ver os comandos.`);
     return ok ? { sent: true } : { sent: false, reason: 'número do dono ausente ou sem WhatsApp' };

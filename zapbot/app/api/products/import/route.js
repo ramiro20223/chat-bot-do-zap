@@ -4,7 +4,7 @@ import { parseBulk } from '@/lib/product.js';
 
 export async function POST(req) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { text } = await readJson(req, 2_000_000);
   const { items, errors } = parseBulk(text);
   if (!items.length) return bad(errors[0] || 'Nenhum produto encontrado no texto');

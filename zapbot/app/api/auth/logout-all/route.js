@@ -7,7 +7,7 @@ import { clearSessionCookie, unauthorized } from '@/lib/session.js';
 export async function POST() {
   const token = (await cookies()).get(COOKIE)?.value;
   const s = token && (await verifyToken(token));
-  if (!s) return unauthorized();
+  if (!s) return await unauthorized();
   await query('update users set token_version = token_version + 1 where id = $1', [s.userId]);
   await clearSessionCookie();
   return Response.json({ ok: true });

@@ -1,5 +1,6 @@
 import { query } from '@/lib/db.js';
-import { checkPassword, burnPasswordCheck, signToken } from '@/lib/auth.js';
+import { checkPassword, burnPasswordCheck, signToken, hashPassword, needsRehash } from '@/lib/auth.js';
+import { statusOf } from '@/lib/subscription.js';
 import { createLimiter } from '@/lib/limits.js';
 import { clientIp } from '@/lib/web-security.js';
 import { setSessionCookie, readJson, bad } from '@/lib/session.js';
@@ -20,13 +21,14 @@ export async function POST(req) {
   }
 
   const pw = typeof password === 'string' ? password.slice(0, 200) : '';
-  const user = (await query('select id, password_hash, token_version from users where email = $1', [mail])).rows[0];
+  const user = (await query('select id, password_hash, token_version, subscription_until, blocked from users where email = $1', [mail])).rows[0];
   const ok = user ? await checkPassword(pw, user.password_hash) : (await burnPasswordCheck(pw), false);
   if (!ok) {
     byEmail.record(mail); byPair.record(pair); byIp.record(ip);
     return bad('E-mail ou senha incorretos', 401);
   }
   byPair.clear(pair);
+  if (needsRehash(user.password_hash)) await query('update users set password_hash = $1 where id = $2', [await hashPassword(pw), user.id]).catch(() => {});
   await setSessionCookie(await signToken(user.id, Number(user.token_version)));
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, status: statusOf(user) });
 }

@@ -23,6 +23,20 @@ export async function middleware(req) {
     return ok ? NextResponse.next() : NextResponse.json({ error: 'Origem não permitida' }, { status: 403 });
   }
 
+  // Painel do ADMINISTRADOR: cookie próprio (audiência diferente). Cookie de cliente nunca serve aqui.
+  if (pathname.startsWith('/admin/painel')) {
+    try {
+      const secret = secretBytes();
+      const token = req.cookies.get(process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'false' ? '__Host-zap_admin' : 'zap_admin')?.value;
+      if (!secret || !token) throw new Error('sem sessão');
+      await jwtVerify(token, secret, { algorithms: ['HS256'], issuer: 'zapbot', audience: 'zapbot-admin' });
+      return NextResponse.next();
+    } catch {
+      const url = req.nextUrl.clone(); url.pathname = '/admin'; url.search = '';
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Painel: exige sessão com assinatura válida. Se a sessão foi revogada, as rotas da API conferem no banco e mandam para o login.
   try {
     const secret = secretBytes();
@@ -38,4 +52,4 @@ export async function middleware(req) {
   }
 }
 
-export const config = { matcher: ['/painel/:path*', '/api/:path*'] };
+export const config = { matcher: ['/painel/:path*', '/assinatura', '/admin/painel/:path*', '/api/:path*'] };

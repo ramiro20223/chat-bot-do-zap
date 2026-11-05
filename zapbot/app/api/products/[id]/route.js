@@ -5,7 +5,7 @@ import { cleanProduct } from '@/lib/product.js';
 
 export async function PUT(req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
   const r = cleanProduct(await readJson(req));
@@ -21,7 +21,7 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(_req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
   await query('delete from products where id = $1 and business_id = $2', [id, b.id]);

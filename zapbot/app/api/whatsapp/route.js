@@ -5,13 +5,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   return Response.json(getStatus(b.id));
 }
 
 export async function POST(req) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { action } = await readJson(req);
   if (action === 'connect') return Response.json(await connect(b.id));
   if (action === 'disconnect') { await disconnect(b.id); return Response.json(getStatus(b.id)); }

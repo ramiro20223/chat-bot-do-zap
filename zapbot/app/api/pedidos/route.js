@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const rows = await listOrders(b.id, null, 100);
   return Response.json(rows.map((o) => ({
     id: o.id, num: Number(o.num), status: o.status, customer: o.customer_name || o.contact_name, phone: o.jid.split('@')[0],
@@ -20,7 +20,7 @@ export async function GET() {
 // Ações do dono pelo painel: confirmar | recusar | cancelar
 export async function POST(req) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { num, action, reason } = await readJson(req);
   if (!['confirmar', 'recusar', 'cancelar'].includes(action) || !Number.isInteger(num)) return bad('Ação inválida');
   const r = await applyOrderAction({ business: b, num, action, reason: reason ? String(reason).slice(0, 300) : null, notifyCustomer: (jid, t) => sendToCustomer(b.id, jid, t) });

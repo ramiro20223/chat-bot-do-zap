@@ -106,3 +106,30 @@ create table if not exists order_proofs (
 );
 create index if not exists order_proofs_hash_idx on order_proofs (business_id, image_sha256);
 create index if not exists order_proofs_e2e_idx on order_proofs (business_id, e2e_id) where e2e_id is not null;
+
+-- ===== Assinatura (R$ 99,99/mês), ID da conta e liberação pelo administrador =====
+alter table users add column if not exists account_code text;
+alter table users add column if not exists subscription_until timestamptz;
+alter table users add column if not exists blocked boolean not null default false;
+alter table users add column if not exists totp_last_step bigint;
+-- contas criadas antes deste recurso ganham um ID automaticamente
+update users set account_code = 'ZB-' || upper(substr(translate(replace(gen_random_uuid()::text, '-', ''), '01ail', '23456'), 1, 6)) where account_code is null;
+create unique index if not exists users_account_code_idx on users (account_code);
+
+-- Histórico das liberações feitas pelo administrador (auditoria)
+create table if not exists subscription_events (
+  id bigserial primary key,
+  user_id uuid not null references users(id) on delete cascade,
+  action text not null check (action in ('activate','extend','revoke','block','unblock')),
+  days integer,
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists subscription_events_user_idx on subscription_events (user_id, id desc);
+
+-- Controle do 2FA do administrador (impede reutilizar o mesmo código)
+create table if not exists admin_state (
+  id integer primary key default 1 check (id = 1),
+  totp_last_step bigint
+);
+insert into admin_state (id) values (1) on conflict do nothing;

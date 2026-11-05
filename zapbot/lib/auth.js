@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { sessionCookieName } from './web-security.js';
+import { pepperInput, isPeppered, stripPepperPrefix, PEPPERED } from './password.js';
 
 export const COOKIE = sessionCookieName(process.env);
 export const MAX_AGE = 60 * 60 * 24 * 7; // 7 dias
@@ -16,8 +17,24 @@ const secret = () => {
   return new TextEncoder().encode(s || 'dev-only-secret-change-me');   // só em desenvolvimento
 };
 
-export const hashPassword = (pw) => bcrypt.hash(pw, 12);
-export const checkPassword = (pw, hash) => bcrypt.compare(pw, hash);
+// Senha do cliente: HMAC com a "pimenta" (segredo só do servidor) + bcrypt custo 12. Quem roubar o banco não consegue nem testar senhas.
+const pepper = () => process.env.PASSWORD_PEPPER || null;
+
+export async function hashPassword(pw) {
+  const p = pepper();
+  return p ? PEPPERED + (await bcrypt.hash(pepperInput(pw, p), 12)) : bcrypt.hash(pw, 12);
+}
+
+export async function checkPassword(pw, hash) {
+  if (isPeppered(hash)) {
+    const p = pepper();
+    return p ? bcrypt.compare(pepperInput(pw, p), stripPepperPrefix(hash)) : false;
+  }
+  return bcrypt.compare(pw, hash);   // contas antigas, sem pimenta
+}
+
+/** Conta antiga (sem pimenta) e pimenta já configurada: no próximo login correto a senha é regravada com pimenta. */
+export const needsRehash = (hash) => !isPeppered(hash) && Boolean(pepper());
 
 // Gasta o mesmo tempo de uma conferência real quando o e-mail não existe (não dá para descobrir e-mails cadastrados pelo tempo da resposta).
 let dummy;

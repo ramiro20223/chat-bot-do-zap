@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
   const { rows } = await query(
@@ -20,7 +20,7 @@ export async function GET(_req, { params }) {
 // Retoma o bot numa conversa que estava pausada (atendimento humano).
 export async function POST(_req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
   await query('update conversations set paused_until = null where id = $1 and business_id = $2', [id, b.id]);
