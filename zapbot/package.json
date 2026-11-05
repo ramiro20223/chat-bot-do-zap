@@ -16,7 +16,7 @@
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
     "bcryptjs": "^2.4.3",
-    "jose": "^5.9.6",
+    "jose": "^6.2.15",
     "next": "^15.1.0",
     "pg": "^8.13.1",
     "pino": "^9.5.0",
