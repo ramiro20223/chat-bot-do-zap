@@ -132,3 +132,7 @@ Depois defina também `PASSWORD_PEPPER`, `ADMIN_WHATSAPP` e `ALLOW_REGISTRATION=
 **Regras:** sem assinatura ativa (pendente, vencida ou bloqueada) o painel responde "assinatura inativa" **e o bot fica mudo** (não responde clientes nem avisa o dono). Contas criadas antes deste recurso viram "aguardando" até você liberar.
 
 **Senhas e segredos:** senha do cliente = HMAC com a pimenta (`PASSWORD_PEPPER`) + bcrypt custo 12 (contas antigas são regravadas assim no próximo login). Senha do admin = scrypt; o 2FA é TOTP (RFC 6238) e o mesmo código não vale duas vezes. Nenhuma senha é guardada em texto puro, nem no banco nem nos logs.
+
+**Cadeado e senhas (painel admin):** cliente sem assinatura ativa vê o painel normal por trás de uma tela translúcida com cadeado ("Efetue o pagamento para ter o acesso") e o botão do seu WhatsApp; ao você ativar, a tela some sozinha. Em `/admin` o botão **Nova senha** gera uma senha provisória (aparece uma única vez) que você manda ao cliente; ele troca em Painel → Minha conta. Existe um único administrador, definido só por variáveis de ambiente; o e-mail dele não pode ser cadastrado como cliente.
+
+**Acessibilidade (todas as telas):** botão ♿ com tema automático/claro/escuro, tamanho da letra (4 níveis), alto contraste e reduzir animações. A escolha fica salva no aparelho.

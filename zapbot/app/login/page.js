@@ -14,9 +14,9 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault(); setErr(''); setBusy(true);
     try {
-      const r = await api(mode === 'login' ? '/api/auth/login' : '/api/auth/register', { method: 'POST', body: f });
-      // Conta nova ou sem assinatura ativa vai para a tela do ID; assinatura ativa vai direto ao painel.
-      window.location.href = mode === 'register' || (r.status && r.status !== 'active') ? '/assinatura' : '/painel';
+      await api(mode === 'login' ? '/api/auth/login' : '/api/auth/register', { method: 'POST', body: f });
+      // Conta nova vê o ID para ativar; quem já tem conta entra no painel (se a assinatura estiver inativa, aparece o cadeado).
+      window.location.href = mode === 'register' ? '/assinatura' : '/painel';
     } catch (x) { setErr(x.message); setBusy(false); }
   }
 

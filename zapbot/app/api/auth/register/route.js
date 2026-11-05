@@ -19,6 +19,7 @@ export async function POST(req) {
 
   const mail = String(email || '').trim().toLowerCase();
   if (mail.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return bad('E-mail inválido');
+  if (process.env.ADMIN_EMAIL && mail === String(process.env.ADMIN_EMAIL).trim().toLowerCase()) return bad('Este e-mail já está cadastrado', 409);   // reservado ao administrador
   const weak = passwordProblem(password, mail);
   if (weak) return bad(weak);
   const name = String(businessName || '').trim().slice(0, 120) || 'Minha empresa';

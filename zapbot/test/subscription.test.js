@@ -125,3 +125,17 @@ test('senha dos clientes: pimenta muda o resultado e cabe no bcrypt', () => {
   assert.equal(isPeppered('$2b$12$abc'), false);
   assert.equal(stripPepperPrefix('p1$$2b$12$abc'), '$2b$12$abc');
 });
+
+import { generateTempPassword } from '../lib/password.js';
+import { passwordProblem } from '../lib/web-security.js';
+test('senha provisória: forte, legível, passa na política e nunca repete', () => {
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) {
+    const p = generateTempPassword();
+    assert.match(p, /^[A-HJ-NP-Za-km-z2-9]{14}$/);
+    assert.match(p, /[A-Z]/); assert.match(p, /[a-z]/); assert.match(p, /\d/);
+    assert.equal(passwordProblem(p, 'cliente@x.com'), null);
+    seen.add(p);
+  }
+  assert.equal(seen.size, 200);
+});

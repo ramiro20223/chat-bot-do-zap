@@ -133,3 +133,7 @@ create table if not exists admin_state (
   totp_last_step bigint
 );
 insert into admin_state (id) values (1) on conflict do nothing;
+
+alter table subscription_events drop constraint if exists subscription_events_action_check;
+alter table subscription_events add constraint subscription_events_action_check
+  check (action in ('activate','extend','revoke','block','unblock','reset_password'));
