@@ -21,6 +21,15 @@ if (errors.length) {
 const app = next({ dev, hostname: '0.0.0.0', port });
 const handle = app.getRequestHandler();
 
+// Abre a porta JÁ: hospedagens como o Render derrubam o serviço se a porta demora a responder.
+// Enquanto o Next prepara, quem chegar recebe um "iniciando" (503) e tenta de novo.
+let ready = false;
+createServer((req, res) => {
+  if (ready) return handle(req, res);
+  res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '5' });
+  res.end('Iniciando, tente em alguns segundos.');
+}).listen(port, '0.0.0.0', () => console.log(`> porta ${port} aberta (${dev ? 'desenvolvimento' : 'produção'}), preparando…`));
+
 await app.prepare();
 
 const { ensureSchema } = await import('./lib/db.js');
@@ -34,6 +43,5 @@ if (migrated) console.log(`[seg] ${migrated} registro(s) da sessão do WhatsApp 
 const { restoreSessions } = await import('./lib/wa.js');
 restoreSessions().catch((e) => console.error('[wa] restore:', e.message));
 
-createServer((req, res) => handle(req, res)).listen(port, () => {
-  console.log(`> ZapBot em http://localhost:${port} (${dev ? 'desenvolvimento' : 'produção'})`);
-});
+ready = true;
+console.log('> ZapBot pronto');
