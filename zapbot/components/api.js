@@ -5,9 +5,11 @@ export async function api(path, { method = 'GET', body } = {}) {
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
     cache: 'no-store',
-  });
+    signal: AbortSignal.timeout(90000),
+  }).catch((e) => { throw new Error(e.name === 'TimeoutError' ? 'A resposta demorou demais. Veja o terminal do servidor para o motivo.' : e.message); });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && typeof window !== 'undefined') window.location.href = '/login';
+  if (res.status === 402 && typeof window !== 'undefined') window.dispatchEvent(new Event('zap:locked'));
   if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente novamente.');
   return data;
 }

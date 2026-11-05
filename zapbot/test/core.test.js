@@ -34,7 +34,7 @@ test('describeHours', () => {
 });
 
 test('tokenize remove acentos e palavras vazias', () => {
-  assert.deepEqual(tokenize('Preciso de um remédio para dor de cabeça'), ['remedio', 'dor', 'cabeca']);
+  assert.deepEqual(tokenize('Preciso de um remédio para dor de cabeça'), ['remedio', 'medicamento', 'dor', 'cabeca']);
   assert.deepEqual(tokenize('dor dor DOR'), ['dor']);
 });
 
@@ -113,4 +113,27 @@ test('parseBulk importa linhas e relata erros', () => {
   assert.equal(items[0].category, 'Analgésicos');
   assert.equal(errors.length, 1);
   assert.match(errors[0], /Linha 3/);
+});
+
+import { stem, editDistance, fuzzyScore } from '../lib/text.js';
+
+test('stem: plurais comuns', () => {
+  for (const [a, b] of [['calhas', 'calha'], ['dores', 'dor'], ['paes', 'pao'], ['limoes', 'limao'], ['animais', 'animal'],
+    ['papeis', 'papel'], ['remedios', 'remedio'], ['gas', 'gas'], ['pizza', 'pizza'], ['classe', 'classe']]) assert.equal(stem(a), b, a);
+});
+
+test('tokenize: plural vira singular e sinônimos entram', () => {
+  assert.deepEqual(tokenize('vocês limpam calhas?'), ['limpam', 'calha']);
+  assert.ok(tokenize('quero consertar celular').includes('reparo'));
+  assert.ok(tokenize('tenho enxaqueca').includes('cabeca'));
+  assert.ok(tokenize('troca de display').includes('tela'));
+});
+
+test('editDistance e fuzzyScore: tolera erros de digitação', () => {
+  assert.equal(editDistance('dipirona', 'dipirna', 2), 1);
+  assert.equal(editDistance('abc', 'xyz', 1), 2);
+  assert.ok(fuzzyScore(['dipirna'], 'dipirona 500mg analgesicos dor de cabeca') >= 1);
+  assert.ok(fuzzyScore(['calhs'], 'limpeza de calhas residencial') >= 1);
+  assert.equal(fuzzyScore(['xyzabc'], 'dipirona 500mg'), 0);
+  assert.equal(fuzzyScore(['dor'], 'dar'), 0); // termos curtos não entram no fuzzy
 });

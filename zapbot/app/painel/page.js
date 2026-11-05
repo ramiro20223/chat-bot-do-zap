@@ -7,6 +7,7 @@ export default function Conexao() {
   const [wa, setWa] = useState({ status: 'idle' });
   const [me, setMe] = useState(null);
   const [err, setErr] = useState('');
+  const [note, setNote] = useState('');
 
   const refresh = useCallback(async () => { try { setWa(await api('/api/whatsapp')); } catch (e) { setErr(e.message); } }, []);
   const loadMe = useCallback(async () => { try { setMe(await api('/api/me')); } catch (e) { setErr(e.message); } }, []);
@@ -20,6 +21,11 @@ export default function Conexao() {
   }, [wa.status, refresh]);
 
   const act = (action) => async () => { setErr(''); try { setWa(await api('/api/whatsapp', { method: 'POST', body: { action } })); } catch (e) { setErr(e.message); } };
+  async function testOwner() {
+    setErr(''); setNote('');
+    try { const r = await api('/api/whatsapp', { method: 'POST', body: { action: 'test_owner' } }); setNote(r.sent ? 'Mensagem de teste enviada ao dono. Confira o WhatsApp dele.' : `Não enviou: ${r.reason}`); }
+    catch (e) { setErr(e.message); }
+  }
   async function toggleBot(on) { await api('/api/business', { method: 'PUT', body: { bot_enabled: on } }); loadMe(); }
 
   return (
@@ -27,6 +33,7 @@ export default function Conexao() {
       <h1>Conexão com o WhatsApp</h1>
       <p className="muted">{me ? me.name : ''}</p>
       {err && <div className="alert err" role="alert">{err}</div>}
+      {note && <div className="alert ok" role="status">{note}</div>}
       {me?.setupMissing?.length > 0 && (
         <div className="alert">Faltam {me.setupMissing.length} informação(ões) obrigatória(s) da empresa. O bot responde melhor com tudo preenchido — <Link href="/painel/configuracao">terminar configuração</Link>.</div>
       )}
@@ -48,6 +55,8 @@ export default function Conexao() {
           <p><span className="pill">Conectado</span> {wa.phone && <>número <strong>+{wa.phone}</strong></>}</p>
           <label className="check"><input type="checkbox" checked={me?.bot_enabled ?? true} onChange={(e) => toggleBot(e.target.checked)} /> Bot respondendo automaticamente</label>
           <p className="small muted">Se você responder uma conversa direto pelo celular, o bot fica em silêncio nela por 30 minutos.</p>
+          <p className="small muted">Modo vendas: o bot só puxa assunto com o número do dono (configurado em Configuração). Teste se o número está certo:</p>
+          <button onClick={testOwner}>Enviar mensagem de teste ao dono</button>{' '}
           <button className="danger" onClick={() => { if (confirm('Desconectar e desvincular este WhatsApp?')) act('disconnect')(); }}>Desconectar</button>
         </>)}
       </div>

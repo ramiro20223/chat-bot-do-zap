@@ -10,7 +10,8 @@
     "dev": "node server.mjs",
     "build": "next build",
     "start": "NODE_ENV=production node server.mjs",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "admin:setup": "node scripts/admin-setup.mjs"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",

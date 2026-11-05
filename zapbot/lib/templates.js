@@ -1,4 +1,6 @@
 // Questionário de configuração por tipo de empresa (puro).
+import { PIX_KEY_TYPES } from './pix.js';
+
 // Tipos de pergunta: text | textarea | select | multi | boolean | hours
 
 export const BUSINESS_TYPES = [
@@ -49,6 +51,15 @@ const COMMON_AFTER = [
   { key: 'tone', label: 'Tom de voz do atendimento', type: 'select', required: true,
     options: ['Amigável e descontraído', 'Formal e profissional', 'Direto e objetivo'] },
   { key: 'rules', label: 'Regras extras: o que o atendente virtual NUNCA deve fazer ou prometer', type: 'textarea' },
+  // --- Vendas e Pix ---
+  { key: 'sales_mode', label: 'MODO VENDAS: o bot fecha pedidos, negocia, gera o Pix e confere o comprovante', type: 'boolean' },
+  { key: 'owner_phone', label: 'WhatsApp do dono, com DDD (recebe pedidos e comprovantes e confirma pagamentos). É o ÚNICO número para o qual o bot puxa assunto', type: 'text', requiredIf: 'sales_mode' },
+  { key: 'pix_key_type', label: 'Tipo da chave Pix', type: 'select', options: PIX_KEY_TYPES, requiredIf: 'sales_mode' },
+  { key: 'pix_key', label: 'Chave Pix da empresa', type: 'text', requiredIf: 'sales_mode' },
+  { key: 'pix_name', label: 'Nome do recebedor (como aparece no Pix)', type: 'text', requiredIf: 'sales_mode' },
+  { key: 'pix_city', label: 'Cidade do recebedor', type: 'text' },
+  { key: 'max_discount', label: 'Desconto máximo (%) que o bot pode dar ao negociar. Use 0 para não negociar preço', type: 'text' },
+  { key: 'order_details_needed', label: 'O que o bot deve perguntar antes de fechar o pedido? (ex.: tamanho, cor, sabor, endereço, horário, nome)', type: 'textarea' },
 ];
 
 const SPECIFIC = {
@@ -96,7 +107,10 @@ export function questionsFor(type) {
 
 const isEmpty = (v) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 
+/** Pergunta obrigatória? (algumas só são obrigatórias quando outra opção está ligada, ex.: Pix no modo vendas) */
+export const isRequired = (q, answers = {}) => !!(q.required || (q.requiredIf && answers[q.requiredIf] === true));
+
 /** Lista as perguntas obrigatórias ainda sem resposta. */
 export function missingRequired(type, answers = {}) {
-  return questionsFor(type).filter((q) => q.required && isEmpty(answers[q.key]) && q.type !== 'boolean').map((q) => q.key);
+  return questionsFor(type).filter((q) => isRequired(q, answers) && isEmpty(answers[q.key]) && q.type !== 'boolean').map((q) => q.key);
 }

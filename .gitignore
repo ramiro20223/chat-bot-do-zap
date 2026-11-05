@@ -1,0 +1,23 @@
+# Dependências e build
+node_modules/
+.next/
+*.log
+
+# Segredos: NUNCA versionar
+.env
+.env.*
+!.env.example
+sessions/
+
+# Android/APK: chaves de assinatura e arquivos com segredo nunca vão para o Git
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+local.properties
+google-services.json
+*.apk
+*.aab

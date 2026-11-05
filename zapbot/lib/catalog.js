@@ -1,5 +1,5 @@
 import { query } from './db.js';
-import { tokenize } from './text.js';
+import { tokenize, fuzzyScore } from './text.js';
 
 /** Busca no catálogo da empresa: ranqueia por quantos termos batem; sem estoque vem depois. */
 export async function searchProducts(businessId, text, limit = 6) {
@@ -12,5 +12,17 @@ export async function searchProducts(businessId, text, limit = 6) {
      ) x where score > 0 order by score desc, in_stock desc, name limit $3`,
     [businessId, tokens, limit],
   );
-  return rows;
+  if (rows.length) return rows;
+
+  // Nada bateu exatamente: tenta tolerar erros de digitação ("dipirna", "calhs").
+  const { rows: all } = await query(
+    'select id, name, category, description, indications, characteristics, price, in_stock, search_text from products where business_id = $1 and active',
+    [businessId],
+  );
+  return all
+    .map((p) => ({ p, score: fuzzyScore(tokens, p.search_text) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || Number(b.p.in_stock) - Number(a.p.in_stock) || a.p.name.localeCompare(b.p.name))
+    .slice(0, limit)
+    .map(({ p: { search_text, ...rest } }) => rest);
 }

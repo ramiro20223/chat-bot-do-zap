@@ -54,3 +54,19 @@ export function describeHours(hours) {
     return `${label}: ${!h || h.closed ? 'Fechado' : `${h.open} às ${h.close}`}`;
   }).join('\n');
 }
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Valida o horário vindo do painel: os 7 dias, cada um fechado ou com abertura/fechamento HH:MM. Inválido -> null. */
+export function sanitizeHours(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const out = {};
+  for (const { key } of DAYS) {
+    const d = v[key];
+    if (!d || typeof d !== 'object') return null;
+    if (d.closed === true) { out[key] = { closed: true, open: '09:00', close: '18:00' }; continue; }
+    if (!HHMM.test(String(d.open)) || !HHMM.test(String(d.close))) return null;
+    out[key] = { closed: false, open: d.open, close: d.close };
+  }
+  return out;
+}

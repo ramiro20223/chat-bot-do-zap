@@ -1,12 +1,14 @@
+import { isUuid } from '@/lib/web-security.js';
 import { query } from '@/lib/db.js';
-import { currentBusiness, unauthorized, bad } from '@/lib/session.js';
+import { currentBusiness, unauthorized, bad, readJson } from '@/lib/session.js';
 import { cleanProduct } from '@/lib/product.js';
 
 export async function PUT(req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
-  const r = cleanProduct(await req.json().catch(() => ({})));
+  if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
+  const r = cleanProduct(await readJson(req));
   if (r.error) return bad(r.error);
   const p = r.value;
   const res = await query(
@@ -19,8 +21,9 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(_req, { params }) {
   const b = await currentBusiness();
-  if (!b) return unauthorized();
+  if (!b) return await unauthorized();
   const { id } = await params;
+  if (!isUuid(id)) return Response.json({ error: 'Não encontrado' }, { status: 404 });
   await query('delete from products where id = $1 and business_id = $2', [id, b.id]);
   return Response.json({ ok: true });
 }
