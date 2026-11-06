@@ -137,3 +137,13 @@ insert into admin_state (id) values (1) on conflict do nothing;
 alter table subscription_events drop constraint if exists subscription_events_action_check;
 alter table subscription_events add constraint subscription_events_action_check
   check (action in ('activate','extend','revoke','block','unblock','reset_password'));
+
+-- Segurança no Supabase: liga a proteção de linhas (RLS) em todas as tabelas, SEM políticas.
+-- Assim a API pública do Supabase (chave "anon") não lê nem grava nada. O servidor conecta como dono do banco e não é afetado.
+do $$
+declare t text;
+begin
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('alter table public.%I enable row level security', t);
+  end loop;
+end $$;
