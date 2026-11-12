@@ -73,3 +73,5 @@ th { font-size: .8rem; color: var(--muted); font-weight: 600; }
 @keyframes lock-bob { 50% { transform: translateY(-5px) rotate(-4deg); } }
 .lock-card h2 { font-size: 1.35rem; margin: 0 0 6px; } .lock-card .id { font-weight: 700; letter-spacing: .08em; font-size: 1.4rem; color: var(--brand); margin: 10px 0; }
 .lock-card .wa { display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; background: #25d366; color: #052e16; font-weight: 700; text-decoration: none; margin-top: 14px; }
+.renew { background: #ffc53d; color: #0b1026; padding: 10px 16px; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; font-weight: 600; text-align: center; }
+.renew a { background: #0b1026; color: #fff; padding: 6px 14px; border-radius: 99px; text-decoration: none; }

@@ -139,3 +139,26 @@ test('senha provisória: forte, legível, passa na política e nunca repete', ()
   }
   assert.equal(seen.size, 200);
 });
+
+import { daysLeft, summarize } from '../lib/subscription.js';
+test('dias restantes: arredonda para cima, 0 se vencida, null se nunca ativou', () => {
+  const now = new Date('2026-11-12T12:00:00Z');
+  assert.equal(daysLeft(null, now), null);
+  assert.equal(daysLeft('2026-11-12T12:00:00Z', now), 0);       // vence agora = vencida
+  assert.equal(daysLeft('2026-11-01T00:00:00Z', now), 0);
+  assert.equal(daysLeft('2026-11-12T18:00:00Z', now), 1);       // 6 horas = ainda conta 1 dia
+  assert.equal(daysLeft('2026-11-17T12:00:00Z', now), 5);
+  assert.equal(daysLeft('lixo', now), null);
+});
+
+test('resumo do admin: contagens, vencendo em 5 dias e receita só das ativas', () => {
+  const now = new Date('2026-11-12T12:00:00Z');
+  const r = summarize([
+    { subscription_until: '2026-12-30T00:00:00Z' },                      // ativa
+    { subscription_until: '2026-11-14T00:00:00Z' },                      // ativa, vence em 2 dias
+    { subscription_until: '2026-10-01T00:00:00Z' },                      // vencida
+    {},                                                                  // aguardando
+    { subscription_until: '2027-01-01T00:00:00Z', blocked: true },       // bloqueada não conta como ativa
+  ], now);
+  assert.deepEqual(r, { total: 5, active: 2, pending: 1, expired: 1, blocked: 1, expiringSoon: 1, monthlyCents: 19998 });
+});

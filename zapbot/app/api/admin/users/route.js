@@ -3,10 +3,10 @@ import { isAdmin } from '@/lib/admin-session.js';
 import { readJson } from '@/lib/session.js';
 import { hashPassword } from '@/lib/auth.js';
 import { generateTempPassword } from '@/lib/password.js';
-import { statusOf, extendUntil, normalizeCode, PLAN_DAYS } from '@/lib/subscription.js';
+import { summarize, daysLeft, statusOf, extendUntil, normalizeCode, PLAN_DAYS } from '@/lib/subscription.js';
 
 const deny = () => Response.json({ error: 'Não autorizado' }, { status: 401 });
-const safe = (u) => ({ company: u.company || null, id: u.id, email: u.email, accountCode: u.account_code, until: u.subscription_until, blocked: u.blocked, status: statusOf(u), createdAt: u.created_at });
+const safe = (u) => ({ company: u.company || null, id: u.id, email: u.email, accountCode: u.account_code, until: u.subscription_until, blocked: u.blocked, status: statusOf(u), daysLeft: daysLeft(u.subscription_until), createdAt: u.created_at });
 
 export async function GET(req) {
   if (!(await isAdmin())) return deny();
@@ -18,7 +18,8 @@ export async function GET(req) {
      where ($1 = '' or u.email ilike '%' || $1 || '%' or b.name ilike '%' || $1 || '%' or u.account_code = $2)
      order by (u.subscription_until is null and not u.blocked) desc, u.created_at desc limit 200`,
     [q.replace(/[%_\\]/g, ''), code || '']);
-  return Response.json({ users: rows.map(safe) });
+  const all = (await query('select subscription_until, blocked from users')).rows;
+  return Response.json({ users: rows.map(safe), stats: summarize(all) });
 }
 
 // Ações: activate/extend (+30 dias ou "days"), revoke (zera a assinatura), block/unblock.

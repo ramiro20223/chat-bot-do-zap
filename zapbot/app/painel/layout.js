@@ -27,6 +27,15 @@ function Lock() {
     } catch { /* tenta de novo no próximo ciclo */ }
   }, []);
   useEffect(() => { load(); const t = setInterval(load, 8000); const on = () => load(); window.addEventListener('zap:locked', on); return () => { clearInterval(t); window.removeEventListener('zap:locked', on); }; }, [load]);
+  if (acc?.status === 'active' && acc.daysLeft != null && acc.daysLeft <= (acc.warnDays ?? 5)) {
+    const d = acc.daysLeft;
+    return (
+      <div className="renew" role="status">
+        <span>{d <= 1 ? 'Sua assinatura vence hoje ou amanhã.' : `Sua assinatura vence em ${d} dias.`} Renove para o bot não parar.</span>
+        {acc.whatsapp && <a href={acc.whatsapp} target="_blank" rel="noopener noreferrer">Renovar no WhatsApp</a>}
+      </div>
+    );
+  }
   if (!acc || acc.status === 'active') return null;
   const [title, sub] = LOCK[acc.status] || LOCK.pending;
   return (
@@ -61,8 +70,8 @@ export default function PainelLayout({ children }) {
         <button onClick={sair}>Sair</button>
         <button onClick={sairTodos} title="Encerra o login em todos os aparelhos">Sair de todos</button>
       </div></nav>
-      <main className="wrap">{children}</main>
       <Lock />
+      <main className="wrap">{children}</main>
     </>
   );
 }
