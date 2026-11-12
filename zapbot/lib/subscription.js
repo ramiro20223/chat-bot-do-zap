@@ -52,3 +52,28 @@ export function whatsappLink(number, { code }) {
   const text = `Olá! Acabei de criar minha conta no ZapBot. Meu ID é ${code}. Quero ativar a assinatura de ${PRICE_LABEL} por mês.`;
   return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
 }
+
+export const WARN_DAYS = 5;   // avisa o cliente (e destaca no admin) quando faltam 5 dias ou menos
+
+/** Dias que faltam (arredonda para cima: "vence hoje à noite" = 1). null = nunca ativou; 0 = vencida. */
+export function daysLeft(until, now = new Date()) {
+  if (!until) return null;
+  const ms = new Date(until).getTime() - now.getTime();
+  if (!Number.isFinite(ms)) return null;
+  return ms <= 0 ? 0 : Math.ceil(ms / 86_400_000);
+}
+
+/** Números do painel admin. Receita = assinaturas ativas x preço (estimativa mensal, não é caixa). */
+export function summarize(users, now = new Date()) {
+  const out = { total: 0, active: 0, pending: 0, expired: 0, blocked: 0, expiringSoon: 0, monthlyCents: 0 };
+  for (const u of users) {
+    out.total++;
+    const st = statusOf(u, now);
+    out[st]++;
+    if (st === 'active') {
+      out.monthlyCents += PRICE_CENTS;
+      if (daysLeft(u.subscription_until, now) <= WARN_DAYS) out.expiringSoon++;
+    }
+  }
+  return out;
+}

@@ -136,3 +136,5 @@ Depois defina também `PASSWORD_PEPPER`, `ADMIN_WHATSAPP` e `ALLOW_REGISTRATION=
 **Cadeado e senhas (painel admin):** cliente sem assinatura ativa vê o painel normal por trás de uma tela translúcida com cadeado ("Efetue o pagamento para ter o acesso") e o botão do seu WhatsApp; ao você ativar, a tela some sozinha. Em `/admin` o botão **Nova senha** gera uma senha provisória (aparece uma única vez) que você manda ao cliente; ele troca em Painel → Minha conta. Existe um único administrador, definido só por variáveis de ambiente; o e-mail dele não pode ser cadastrado como cliente.
 
 **Acessibilidade (todas as telas):** botão ♿ com tema automático/claro/escuro, tamanho da letra (4 níveis), alto contraste e reduzir animações. A escolha fica salva no aparelho.
+
+**Deploy:** veja o guia passo a passo em [`docs/DEPLOY.md`](docs/DEPLOY.md) (Render + Supabase). O endereço `/api/health` serve de verificação de saúde. O servidor trata o desligamento do deploy sem desvincular o WhatsApp. O painel admin mostra ativos, aguardando, vencendo em 5 dias e a receita mensal estimada; o cliente vê uma faixa de renovação nos últimos 5 dias.

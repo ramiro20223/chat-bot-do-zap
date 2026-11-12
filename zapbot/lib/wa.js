@@ -65,6 +65,14 @@ export async function disconnect(businessId) {
   await setEnabled(businessId, false);
 }
 
+/** Desligamento do servidor (deploy/reinício): fecha as conexões SEM desvincular o aparelho. Ao subir de novo, restoreSessions reconecta. */
+export function shutdownAll() {
+  for (const s of sessions.values()) {
+    s.stopping = true;
+    try { s.sock?.end(undefined); } catch { /* já fechado */ }
+  }
+}
+
 /** Chamado na inicialização do servidor: reconecta as empresas que estavam conectadas. */
 export async function restoreSessions() {
   const { rows } = await query('select b.id from businesses b join users u on u.id = b.user_id where b.wa_enabled and not u.blocked');

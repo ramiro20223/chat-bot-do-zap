@@ -24,7 +24,7 @@ const handle = app.getRequestHandler();
 // Abre a porta JÁ: hospedagens como o Render derrubam o serviço se a porta demora a responder.
 // Enquanto o Next prepara, quem chegar recebe um "iniciando" (503) e tenta de novo.
 let ready = false;
-createServer((req, res) => {
+const server = createServer((req, res) => {
   if (ready) return handle(req, res);
   res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '5' });
   res.end('Iniciando, tente em alguns segundos.');
@@ -45,3 +45,15 @@ restoreSessions().catch((e) => console.error('[wa] restore:', e.message));
 
 ready = true;
 console.log('> ZapBot pronto');
+
+// Render/Railway mandam SIGTERM a cada deploy. Fecha tudo com calma (sem desvincular o WhatsApp) e sai.
+let closing = false;
+async function shutdown(sig) {
+  if (closing) return; closing = true;
+  console.log(`[servidor] ${sig} recebido, encerrando…`);
+  setTimeout(() => process.exit(0), 10_000).unref();      // trava de segurança
+  try { (await import('./lib/wa.js')).shutdownAll(); } catch { /* ignore */ }
+  server.close(async () => { try { await globalThis.__zapPool?.end(); } catch { /* ignore */ } process.exit(0); });
+  server.closeIdleConnections?.();
+}
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => shutdown(sig));
